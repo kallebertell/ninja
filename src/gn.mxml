@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application 
+	xmlns:mx="http://www.adobe.com/2006/mxml" 
+	layout="absolute"
+	width="600" 
+	height="400"
+	frameRate="100"
+	
+	creationComplete="creationComplete()"
+	enterFrame="enterFrame(event)"
+	applicationComplete="registerGlobalKeyHandler(event)"
+	backgroundColor="#FFFFFF"
+	click="click(event)"
+    mouseDown="mouseDown(event)"
+    mouseUp="mouseUp(event)"
+    mouseMove="mouseMove(event)"
+	
+	currentState="MainMenu" xmlns:gn="com.kerebus.gn.*">
+	
+	<mx:states>
+		
+		
+		<mx:State 
+			name="Game"			
+			enterState="enterGame(event)"
+        	exitState="exitGame(event)">
+		</mx:State>
+		
+		<mx:State 
+			name="LevelEnd">
+			<mx:AddChild relativeTo="{myCanvas}" position="lastChild">
+				<mx:Button x="514" y="368" label="Continue" id="btnContinue" click="btnContinueClicked(event)"/>
+			</mx:AddChild>
+			<mx:AddChild relativeTo="{myCanvas}" position="lastChild">
+				<mx:Label x="10" y="10" text="Congratulations, you finished the level."/>
+			</mx:AddChild>
+		</mx:State>
+		
+		<mx:State name="MainMenu">
+			
+			<mx:AddChild relativeTo="{myCanvas}" position="lastChild">
+				<mx:Button x="525" y="368" label="Start" id="btnStart" click="startGameClicked(event)"/>
+			</mx:AddChild>
+			
+			<mx:AddChild relativeTo="{myCanvas}" position="lastChild">
+				<mx:Image x="10" y="49" source="@Embed('../media/title.png')"/>
+			</mx:AddChild>
+			
+			<mx:AddChild relativeTo="{myCanvas}" position="lastChild">
+				<mx:Label x="10" y="10" text="W,S,A,D to control ninja, use mouse to shoot shurikens."/>
+			</mx:AddChild>
+			
+		</mx:State>
+		
+	</mx:states>
+	
+	<mx:Canvas x="0" y="0" width="100%" height="100%" id="myCanvas"/>
+	<gn:ScoreBoard id="scoreBoard" text="0" x="500" y="10" fontSize="26"/>
+	 
+	<mx:Script>
+	<![CDATA[
+		import com.kerebus.gn.CollisionIdentifiers;
+		import com.kerebus.gn.level.LevelOne;
+		import com.kerebus.gn.MousePosition;
+		import com.kerebus.gn.ObjectFactory;
+		import com.kerebus.gn.ResourcePool;
+		import mx.core.Container;
+		import com.kerebus.gn.LevelEngine;
+		import com.kerebus.gn.GameObjectManager;  
+	
+		protected var inGame:Boolean = false;
+		protected var currentLevelId:int = 1;
+
+		private var levelEngine : LevelEngine;
+		private var gameObjectManager : GameObjectManager;
+		private var objectFactory : ObjectFactory;
+		
+		public function creationComplete():void
+	    {
+	    	gameObjectManager = new GameObjectManager(scoreBoard);
+	    	objectFactory = new ObjectFactory(gameObjectManager, gameObjectManager);
+	    	    	
+			// TODO: move
+			gameObjectManager.addCollidingPair(CollisionIdentifiers.PLAYER, CollisionIdentifiers.ENEMY);
+			gameObjectManager.addCollidingPair(CollisionIdentifiers.ENEMY, CollisionIdentifiers.PLAYERWEAPON);
+			gameObjectManager.addCollidingPair(CollisionIdentifiers.PLAYER, CollisionIdentifiers.ENEMYWEAPON);
+			
+	    }
+	
+		public function registerGlobalKeyHandler(event:Event) : void {
+			stage.addEventListener(KeyboardEvent.KEY_DOWN, keyDown);
+			stage.addEventListener(KeyboardEvent.KEY_UP, keyUp);
+			
+		}
+	    
+	    public function enterFrame(event:Event):void
+	    {
+	    	if (!inGame)
+	    		return;
+
+    		gameObjectManager.enterFrame();
+    		
+    		myCanvas.graphics.clear();
+    		myCanvas.graphics.beginBitmapFill(gameObjectManager.backBuffer, null, false, false);
+    		myCanvas.graphics.drawRect(0, 0, this.width, this.height);
+    		
+    		myCanvas.graphics.beginFill(0x990000, 0.5);
+    		myCanvas.graphics.drawCircle(MousePosition.x, MousePosition.y, 10);
+    		
+    		myCanvas.graphics.endFill();	    	
+	    }
+	    
+	    private function click(event:MouseEvent):void
+	    {
+	    	gameObjectManager.click(event);
+	    }
+	    
+	    private function mouseDown(event:MouseEvent):void
+		{
+			gameObjectManager.mouseDown(event);
+	    }
+	    
+	    private function mouseUp(event:MouseEvent):void
+		{
+			gameObjectManager.mouseUp(event);
+	    }
+	    
+	    private function mouseMove(event:MouseEvent):void
+		{
+			MousePosition.x = event.stageX;
+			MousePosition.y = event.stageY;
+			
+			gameObjectManager.mouseMove(event);
+	    }
+	    
+	    private function keyUp(event:KeyboardEvent) : void {
+	    	gameObjectManager.keyUp(event);
+	    }
+	    
+	    private function keyDown(event: KeyboardEvent) : void {
+	    	gameObjectManager.keyDown(event);
+	    }
+	    
+	    protected function startGameClicked(event:Event):void
+		{
+			currentState = "Game"
+		}  	  
+	    
+	   	protected function enterGame(event:Event):void
+		{
+			Mouse.hide();
+			
+			levelEngine = new LevelEngine(objectFactory, gameObjectManager);
+			levelEngine.startup( new LevelOne(objectFactory) );
+			
+			gameObjectManager.startup(levelEngine);
+			
+			inGame = true;
+	    }
+	    
+	    protected function exitGame(event:Event):void
+		{
+			Mouse.show();
+			levelEngine.shutdown();
+			gameObjectManager.shutdown();
+			inGame = false;
+		}  
+		
+		protected function btnContinueClicked(event:Event):void
+		{
+			currentLevelId = 1;
+			
+			if (currentLevelId == 0)
+			{
+				currentLevelId = 1;
+				currentState = "MainMenu";
+			}
+			else
+			{
+				currentState = "Game"
+			}
+	    }
+	]]>
+    </mx:Script>
+	
+</mx:Application>
